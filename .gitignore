@@ -1,0 +1,16 @@
+# ── project‑specific ignores ───────────────
+*.class
+target/
+*.log
+.DS_Store
+
+# ── runtime data ───────────────────────────
+# 1) ignore everything under data/
+data/**
+
+# 2) UN‑ignore the data directory tree itself
+!data/
+!data/**/
+
+# 3) UN‑ignore the placeholder files that keep the dirs in Git
+!data/**/.gitkeep

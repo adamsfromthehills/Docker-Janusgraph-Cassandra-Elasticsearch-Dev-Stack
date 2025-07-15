@@ -1,0 +1,60 @@
+services:
+  cassandra:
+    image: cassandra:4.0.6          # tested with JanusGraph 1.1.x :contentReference[oaicite:0]{index=0}
+    container_name: cassandra
+    ports:
+      - "9042:9042"
+    volumes:
+      - ./data/cassandra:/var/lib/cassandra
+    networks: [janusnet]
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'DESC KEYSPACES' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.8   # tested with JanusGraph 1.1.x :contentReference[oaicite:1]{index=1}
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
+    networks: [janusnet]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health | grep -vq '\"status\":\"red\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  janusgraph:
+    build: ./janusgraph               # see janusgraph/Dockerfile + entrypoint.sh
+    image: janusgraph-custom:1.1.0
+    container_name: janusgraph
+    environment:
+      # use stock “cql‑es” template and just override the hostnames
+      JANUS_PROPS_TEMPLATE: cql-es
+      janusgraph.storage.hostname: cassandra
+      janusgraph.index.search.hostname: elasticsearch
+      # optional tunables
+      JANUS_SERVER_TIMEOUT: 60
+      JANUS_STORAGE_TIMEOUT: 120
+      MODE: ${MODE:-server}           # set MODE=mgmt for management‑only mode
+    ports:
+      - "8182:8182"
+    depends_on:
+      cassandra:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    networks: [janusnet]
+    volumes:
+      - ./data/janusgraph:/var/lib/janusgraph
+      - ./user-scripts:/opt/janusgraph/user-scripts
+
+networks:
+  janusnet:
