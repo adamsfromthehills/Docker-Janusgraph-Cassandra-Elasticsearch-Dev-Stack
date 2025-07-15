@@ -36,7 +36,7 @@ placeholders.*
 ## 1  Prerequisites
 
 * Docker ≥ 24 with the “compose” plugin  
-* 8 GB free RAM & 25 GB disk space (full ETIM import)
+
 
 ---
 
